@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Work with Excel Files</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>{{ login }}</h1>
+            <a href="/">Back to main menu</a> <br>
+            <a href = '/logout'>Click here to log out</a>
+
+            <form action="http://localhost:5000/ChooseExcelFile" method="POST">
+                <fieldset>
+                    <legend>Please, choose one of the files, allowed for You</legend>
+
+                    {{ choose_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ choose_form.file_list.label }}
+                            {% for current in choose_form.file_list %}
+                                <div> {{ current }} {{ current.label }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div> {{ del_message }} </div>
+                        <div> {{ choose_form.update }} {{ choose_form.delete }} </div>
+                    </div>
+                </fieldset>
+            </form>
+
+            <form action="http://localhost:5000/ChooseExcelFile" method="POST">
+                <fieldset>
+
+                    {{ add_form.hidden_tag() }}
+                    <legend>Or create a new file</legend>
+                    <div>
+                        <div>
+                            {{ add_form.file_name.label }}     {{ add_form.file_name }}
+
+                            <br>
+                                {% for message in add_form.file_name.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div> {{ add_message }} </div>
+
+                        {{ add_form.add }}
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

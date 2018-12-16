@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Work with Excel Files</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>{{ login }}</h1>
+            <a href="/ChooseExcelFile">Back</a> <br>
+            <a href = '/logout'>Click here to log out</a>
+
+            <form action="http://localhost:5000/ExcelEditor" method="POST">
+                <fieldset>
+                    <legend>Excel editor 2.0</legend>
+                    <div>
+                        <h2>Work with {{ file_name }} </h2>
+                    </div>
+
+                    {{ form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ form.cell_address.label }}     {{ form.cell_address }}
+
+                            <br>
+                                {% for message in form.cell_address.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ form.cell_data.label }}     {{ form.cell_data }}
+
+                            <br>
+                                {% for message in form.cell_data.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ form.cell_type.label }}     {{ form.cell_type }}
+
+                            <br>
+                                {% for message in form.cell_type.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div> {{ message }} </div>
+
+                        <div>{{ form.add }} {{ form.update }} {{ form.delete }}</div>
+                    </div>
+                </fieldset>
+            </form>
+
+
+            {% for current in data %}
+                <div> {{ current }} </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

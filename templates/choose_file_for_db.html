@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Excel File Choosing</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>{{ login }}</h1>
+            <a href="/">Back to main menu</a> <br>
+            <a href = '/logout'>Click here to log out</a>
+
+            <form action="http://localhost:5000/ChooseFileForNewDatabase" method="POST">
+                <fieldset>
+                    <legend>Please, choose one of the files, allowed for You</legend>
+
+                    {{ choose_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ choose_form.file_list.label }}
+                            {% for current in choose_form.file_list %}
+                                <div> {{ current }} {{ current.label }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div> {{ choose_message }} </div>
+                        <div>
+                            {{ choose_form.choose }}
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

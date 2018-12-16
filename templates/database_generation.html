@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Database Generation</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>{{ login }}</h1>
+            <a href="/ChooseFileForNewDatabase">Back</a> <br>
+            <a href = '/logout'>Click here to log out</a>
+
+            <form action="http://localhost:5000/DatabaseGeneration" method="POST">
+                <fieldset>
+                    <legend>Please, Enter new Database name and choose the data</legend>
+
+                    <div><h3> {{ file_name }} file was chosen</h3></div>
+
+                    {{ gen_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ gen_form.new_db_name.label }}     {{ gen_form.new_db_name }}
+
+                            <br>
+                                {% for message in gen_form.new_db_name.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            <p>List of data:</p>
+                            {% for current in dataList %}
+                                {{ dataList.index(current) }} {{ current[2] }}
+                                <ul>
+                                    <li><input type="checkbox" name="{{ current[2] }}" id="{{ dataList.index(current) }}" value="{{ dataList.index(current) }}">{{ current }}</li>
+                                </ul>
+                            {% endfor %}
+                        </div>
+
+                        <div>
+                            {{ gen_message }}
+                            {% for current in chosenData %}
+                                <div> {{ current }} </div>
+                            {% endfor %}
+                        </div>
+                        <div> {{ gen_form.create }} </div>
+                    </div>
+
+                    <div>
+                        <h3>List of databases</h3>
+                        {% for current in databaseList %}
+                            <div> {{ current }} </div>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
