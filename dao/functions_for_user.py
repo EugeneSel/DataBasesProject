@@ -2,41 +2,36 @@ import cx_Oracle
 from dao.connection_info import *
 
 
-def getUserLogin(user_login):
+def regUser(user_login, user_password, user_email, user_role=None):
+
     connection = cx_Oracle.connect(username, password, databaseName)
     cursor = connection.cursor()
+    message = cursor.var(cx_Oracle.STRING)
 
-    user = cursor.callfunc("OUTPUT_FOR_USER.GET_USER", cx_Oracle.STRING, [user_login])
+    if not user_role:
+        cursor.callproc("USER_AUTHORIZATION.REGISTRATION", [user_login, user_password, user_email, message])
+    else:
+        cursor.callproc("USER_AUTHORIZATION.REGISTRATION", [user_login, user_password, user_email, message, user_role])
 
     cursor.close()
     connection.close()
 
-    return user
+    return user_login, message.getvalue()
 
 
-def regUser(USER_LOGIN, USER_PASSWORD, USER_EMAIL):
-
-    connection = cx_Oracle.connect(username, password, databaseName)
-    cursor = connection.cursor()
-
-    cursor.callproc("USER_AUTHORIZATION.REGISTRATION", [USER_LOGIN, USER_PASSWORD, USER_EMAIL])
-    cursor.close()
-    connection.close()
-
-    return USER_LOGIN
-
-
-def getUserList():
+def getUserList(login=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    query = 'SELECT * FROM "User"'
-    cursor.execute(query)
+    if login is None:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_USER_LIST())'
+        cursor.execute(query)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_USER_LIST(:login))'
+        cursor.execute(query, login=login)
+
     result = cursor.fetchall()
-    # current_user_login = cursor.callfunc("OUTPUT_FOR_USER.GET_USER_LIST", cx_Oracle.STRING, ["USER_LOGIN"])
-    # cursor.execute(current_user_login)
-    # result = cursor.fetchall()
 
     cursor.close()
     connection.close()
@@ -44,29 +39,19 @@ def getUserList():
     return result
 
 
-def getExcelFileName(file_name):
-    connection = cx_Oracle.connect(username, password, databaseName)
-    cursor = connection.cursor()
-
-    excel = cursor.callfunc("OUTPUT_FOR_USER.GET_EXCEL_FILE", cx_Oracle.STRING, [file_name])
-
-    cursor.close()
-    connection.close()
-
-    return excel
-
-
-def getExcelFileList(user_login):
+def getExcelFileList(user_login, file_name=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    query = "SELECT * FROM \"Excel file\" Where user_login_fk = '%s'" %user_login
-    cursor.execute(query)
+    if not file_name:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_EXCEL_FILE_LIST(:user_login))'
+        cursor.execute(query, user_login=user_login)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_EXCEL_FILE_LIST(:user_login, :file_name))'
+        cursor.execute(query, user_login=user_login, file_name=file_name)
+
     result = cursor.fetchall()
-    # current_user_login = cursor.callfunc("OUTPUT_FOR_USER.GET_USER_LIST", cx_Oracle.STRING, ["USER_LOGIN"])
-    # cursor.execute(current_user_login)
-    # result = cursor.fetchall()
 
     cursor.close()
     connection.close()
@@ -74,29 +59,19 @@ def getExcelFileList(user_login):
     return result
 
 
-def getDatabaseName(db_name):
-    connection = cx_Oracle.connect(username, password, databaseName)
-    cursor = connection.cursor()
-
-    database = cursor.callfunc("OUTPUT_FOR_USER.GET_DB", cx_Oracle.STRING, [db_name])
-
-    cursor.close()
-    connection.close()
-
-    return database
-
-
-def getDatabaseList(user_login):
+def getDatabaseList(user_login, db_name=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    query = 'SELECT * FROM Database Where user_login_fk = \'%s\'' % user_login
-    cursor.execute(query)
+    if not db_name:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_DB_LIST(:user_login))'
+        cursor.execute(query, user_login=user_login)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_DB_LIST(:user_login, :db_name))'
+        cursor.execute(query, user_login=user_login, db_name=db_name)
+
     result = cursor.fetchall()
-    # current_user_login = cursor.callfunc("OUTPUT_FOR_USER.GET_USER_LIST", cx_Oracle.STRING, ["USER_LOGIN"])
-    # cursor.execute(current_user_login)
-    # result = cursor.fetchall()
 
     cursor.close()
     connection.close()
@@ -122,17 +97,39 @@ def getGeneratedDatabaseList(user_login):
     return result
 
 
-def getDataList(file_name, user_login):
+def getRuleList(user_login, file_name=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    query = 'SELECT * FROM Rule WHERE excel_file_name_fk = \'%s\' and user_login_fk = \'%s\'' % (file_name, user_login)
-    cursor.execute(query)
+    if not file_name:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_RULE_LIST(:user_login))'
+        cursor.execute(query, user_login=user_login)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_RULE_LIST(:user_login, :file_name))'
+        cursor.execute(query, user_login=user_login, file_name=file_name)
+
     result = cursor.fetchall()
-    # current_user_login = cursor.callfunc("OUTPUT_FOR_USER.GET_USER_LIST", cx_Oracle.STRING, ["USER_LOGIN"])
-    # cursor.execute(current_user_login)
-    # result = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return result
+
+
+def getDBDataList(user_login, db_name=None):
+    connection = cx_Oracle.connect(username, password, databaseName)
+
+    cursor = connection.cursor()
+
+    if not db_name:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_DBDATA_LIST(:user_login))'
+        cursor.execute(query, user_login=user_login)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_DBDATA_LIST(:user_login, :db_name))'
+        cursor.execute(query, user_login=user_login, db_name=db_name)
+
+    result = cursor.fetchall()
 
     cursor.close()
     connection.close()
@@ -190,6 +187,32 @@ def deleteDatabase(db_name, user_login):
     connection.close()
 
     return db_name
+
+
+def updateUser(login):
+    connection = cx_Oracle.connect(username, password, databaseName)
+
+    cursor = connection.cursor()
+
+    cursor.callproc("WORK_WITH_USER.CHANGE_USER_ROLE", [login])
+
+    cursor.close()
+    connection.close()
+
+    return login
+
+
+def deleteUser(login):
+    connection = cx_Oracle.connect(username, password, databaseName)
+
+    cursor = connection.cursor()
+
+    cursor.callproc("WORK_WITH_USER.DELETE_USER", [login])
+
+    cursor.close()
+    connection.close()
+
+    return login
 
 
 def updateData(file_name, cell, new_data):

@@ -10,11 +10,22 @@
             <h1>Greetings, {{ login }}</h1>
             <a href = '/logout'>Click here to log out</a>
 
-            <div>
-                <a href="/ChooseExcelFile">Work with Excel Files</a> <br>
-                <a href="/Databases">Work with Databases</a> <br>
-                <a href="/ChooseFileForNewDatabase">Database Generation</a>
-            </div>
+            {% if role != 'Banned'%}
+                <div>
+                    <a href="/ChooseExcelFile">Work with Excel Files</a> <br>
+                    <a href="/Databases">Work with Databases</a> <br>
+
+                    {% if role == 'Admin' %}
+                        <a href="/Users">Work with Users</a> <br>
+                    {% endif %}
+
+                    <a href="/ChooseFileForNewDatabase">Database Generation</a>
+                </div>
+            {% else %}
+                <div>
+                    <p>Sorry, {{ login }}, your account is currently banned.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 </body>

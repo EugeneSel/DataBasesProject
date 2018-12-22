@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Work with Users</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1>{{ login }}</h1>
+            <a href = "/">Back to main menu</a> <br>
+            <a href = "/logout">Click here to log out</a>
+
+            <form action="http://localhost:5000/Users" method="POST">
+                <fieldset>
+                    <legend>Please, select a User and action over him</legend>
+
+                    {{ update_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ update_form.user_list.label }}
+                            {% for current in update_form.user_list %}
+                                <div> {{ current }} {{ current.label }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div> {{ update_message }} </div>
+                        <div> {{ update_form.change_role }} {{ update_form.delete }} </div>
+                    </div>
+                </fieldset>
+            </form>
+
+            <form action="http://localhost:5000/Users" method="POST">
+                <fieldset>
+                    <legend>Or create a new User</legend>
+                    {{ add_form.hidden_tag() }}
+                    <div>
+                        <div>
+                            {{ add_form.login.label }}     {{ add_form.login }}
+
+                            <br>
+                                {% for message in add_form.login.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ add_form.email.label }}     {{ add_form.email }}
+
+                            <br>
+                                {% for message in add_form.email.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ add_form.password.label }}     {{ add_form.password }}
+
+                            <br>
+                                {% for message in add_form.password.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ add_form.role.label }}     {{ add_form.role }}
+
+                            <br>
+                                {% for message in add_form.role.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div> {{ is_unique }} </div>
+                        <div> {{ add_message }} </div>
+
+                        {{ add_form.add }}
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -5,7 +5,7 @@ from wtforms import validators
 
 class RegForm(FlaskForm):
     login = StringField("User`s Login", [validators.DataRequired("Please, enter your login."),
-                                         validators.Length(8, 20, "Login consists of minimum 8 symbols, maximum - 20")])
+                                         validators.Length(4, 20, "Login consists of minimum 4 symbols, maximum - 20")])
 
     email = StringField("User`s email", [validators.Email("Your email is incorrect.")])
 
