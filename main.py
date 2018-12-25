@@ -121,7 +121,7 @@ def registration():
 
 @app.route('/ChooseExcelFile', methods=['GET', 'POST'])
 def choose_excel_file():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -182,7 +182,7 @@ def choose_excel_file():
 
 @app.route('/ExcelEditor', methods=['GET', 'POST'])
 def excel_file():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     delete_form = DeleteExcelDataForm()
@@ -268,7 +268,7 @@ def excel_file():
 
 @app.route('/Databases', methods=['GET', 'POST'])
 def databases():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -337,7 +337,7 @@ def databases():
 
 @app.route('/Users', methods=['GET', 'POST'])
 def users():
-    if 'login' not in session or session['role'] != 'Admin':
+    if 'role' not in session or session['role'] != 'Admin':
         return redirect(url_for('index'))
 
     update_form = UpdateUserForm()
@@ -414,7 +414,7 @@ def users():
 
 @app.route('/ChooseFileForNewDatabase', methods=['GET', 'POST'])
 def choose_file_for_db():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -446,7 +446,7 @@ def choose_file_for_db():
 
 @app.route('/DatabaseGeneration', methods=['GET', 'POST'])
 def database_generation():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -502,37 +502,74 @@ def database_generation():
 
 @app.route('/Statistics', methods=['GET'])
 def plots():
-    if 'login' not in session or session['role'] == 'Banned':
+    if 'role' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
-    fileList = getAllExcelFileList(login)
-    dbList = getAllDatabaseList(login)
-    countList = countExcelDataList(login)
+    if 'login' in session:
+        if login is None:
+            return redirect(url_for('index'))
 
-    traceExcel = go.Scatter(
-        x=[current[3] for current in fileList],
-        y=[current[0] for current in fileList],
-        name='Excel files'
-    )
+        fileList = getAllExcelFileList(login)
+        dbList = getAllDatabaseList(login)
+        countList = countExcelDataList(login)
 
-    traceDB = go.Scatter(
-        x=[current[3] for current in dbList],
-        y=[current[0] for current in dbList],
-        name='Databases'
-    )
+        traceExcel = go.Scatter(
+            x=[current[3] for current in fileList],
+            y=[current[0] for current in fileList],
+            name='Excel files'
+        )
 
-    countExcelData = go.Bar(
-        x=[current[0] for current in countList],
-        y=[current[1] for current in countList]
-    )
+        traceDB = go.Scatter(
+            x=[current[3] for current in dbList],
+            y=[current[0] for current in dbList],
+            name='Databases'
+        )
 
-    dataScatter = [traceExcel, traceDB]
-    dataBar = [countExcelData]
-    graphJSONscatter = json.dumps(dataScatter, cls=plotly.utils.PlotlyJSONEncoder)
-    graphJSONbar = json.dumps(dataBar, cls=plotly.utils.PlotlyJSONEncoder)
-    return render_template('statistics.html', login=login,
-                           graphJSONscatter=graphJSONscatter, graphJSONbar=graphJSONbar)
+        countExcelData = go.Bar(
+            x=[current[0] for current in countList],
+            y=[current[1] for current in countList]
+        )
+
+        dataScatter = [traceExcel, traceDB]
+        dataBar = [countExcelData]
+        graphJSONscatter = json.dumps(dataScatter, cls=plotly.utils.PlotlyJSONEncoder)
+        graphJSONbar = json.dumps(dataBar, cls=plotly.utils.PlotlyJSONEncoder)
+        return render_template('statistics.html', login=login,
+                               graphJSONscatter=graphJSONscatter, graphJSONbar=graphJSONbar)
+    else:
+        login = request.cookies.get('login')
+        session['login'] = login
+        if login is None:
+            return redirect(url_for('index'))
+        else:
+            fileList = getAllExcelFileList(login)
+            dbList = getAllDatabaseList(login)
+            countList = countExcelDataList(login)
+
+            traceExcel = go.Scatter(
+                x=[current[3] for current in fileList],
+                y=[current[0] for current in fileList],
+                name='Excel files'
+            )
+
+            traceDB = go.Scatter(
+                x=[current[3] for current in dbList],
+                y=[current[0] for current in dbList],
+                name='Databases'
+            )
+
+            countExcelData = go.Bar(
+                x=[current[0] for current in countList],
+                y=[current[1] for current in countList]
+            )
+
+            dataScatter = [traceExcel, traceDB]
+            dataBar = [countExcelData]
+            graphJSONscatter = json.dumps(dataScatter, cls=plotly.utils.PlotlyJSONEncoder)
+            graphJSONbar = json.dumps(dataBar, cls=plotly.utils.PlotlyJSONEncoder)
+            return render_template('statistics.html', login=login,
+                                   graphJSONscatter=graphJSONscatter, graphJSONbar=graphJSONbar)
 
 
 @app.route('/logout')
