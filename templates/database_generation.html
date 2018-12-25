@@ -34,7 +34,7 @@
                             <p>List of data:</p>
                             {% for current in dataList %}
                                 <ul>
-                                    <li><input type="checkbox" name="{{ current[2] }}" id="{{ dataList.index(current) }}" value="{{ dataList.index(current) }}">{{ current }}</li>
+                                    <li><input type="checkbox" name="{{ current[2] }}" id="{{ dataList.index(current) }}" value="{{ dataList.index(current) }}">{{ current[2:5] }}</li>
                                 </ul>
                             {% endfor %}
                         </div>
@@ -51,7 +51,7 @@
                     <div>
                         <h3>List of databases</h3>
                         {% for current in databaseList %}
-                            <div> {{ current }} </div>
+                            <div> {{ current[0:4] }} </div>
                         {% endfor %}
                     </div>
                 </fieldset>

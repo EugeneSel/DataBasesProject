@@ -195,7 +195,7 @@ def excel_file():
 
     file_name = session['file_name']
     dataList = getRuleList(login, file_name)
-    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
     if request.method == 'POST':
         if delete_form.delete.data:
             if not delete_form.validate():
@@ -208,7 +208,7 @@ def excel_file():
                     dataList[int(request.form['data_list'])][2]
                 )
                 dataList = getRuleList(login, file_name)
-                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
                                        login=login, del_message=message, data=dataList, file_name=file_name)
         elif update_form.add.data or update_form.update.data:
@@ -231,7 +231,7 @@ def excel_file():
                         request.form['cell_type']
                     )
                 dataList = getRuleList(login, file_name)
-                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form, login=login,
                                        update_message=message, data=dataList, file_name=file_name)
         elif filter_form.find.data:
@@ -242,11 +242,11 @@ def excel_file():
                 dataList = getRuleList(login, file_name, request.form['f_cell_address'])
                 if not dataList:
                     dataList = getRuleList(login, file_name)
-                    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                     return render_template('excel_file.html', update_form=update_form, delete_form=delete_form,
                                            filter_form=filter_form, login=login, data=dataList, file_name=file_name,
                                            filter_message='Can`t find non-empty cell %s in current file.' % request.form['f_cell_address'])
-                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form,
                                        filter_form=filter_form, login=login, data=dataList, file_name=file_name,
                                        filter_message='Cell %s found successfully.' % request.form['f_cell_address'])

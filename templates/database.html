@@ -26,7 +26,7 @@
                                     {% if current.label.text == db_name %}
                                         <p>Current Database data</p>
                                         {% for cell in data_list %}
-                                            <div> {{ cell }} </div>
+                                            <div> {{ cell[2:5] }} </div>
                                         {% endfor %}
                                     {% endif %}
                                 </div>
