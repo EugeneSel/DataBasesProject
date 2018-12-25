@@ -24,10 +24,14 @@
                                 <div>
                                     {{ current }} {{ current.label.text }}
                                     {% if current.label.text == db_name %}
-                                        <p>Current Database data</p>
-                                        {% for cell in data_list %}
-                                            <div> {{ cell[2:5] }} </div>
-                                        {% endfor %}
+                                        {% if data_list[0] == 'This Database is empty' %}
+                                            <div> {{ data_list[0] }} </div>
+                                        {% else %}
+                                            <p>Current Database data</p>
+                                            {% for cell in data_list %}
+                                                <div> {{ cell[2:5] }} </div>
+                                            {% endfor %}
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             {% endfor %}

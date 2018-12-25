@@ -1,17 +1,17 @@
-from flask import Flask, render_template, request, flash, session, url_for, redirect, make_response
-from forms.registration import RegForm
-from forms.login import LoginForm
-from forms.work_with_excel_file import FilterExcelDataForm, DeleteExcelDataForm, ExcelDataForm, ChooseExcelForm, AddExcelForm
-from forms.work_with_db import AddDBForm, DeleteDBForm, GenerateDBForm
-from forms.work_with_user import UpdateUserForm, AddUserForm
-from dao.functions_for_user import *
-from datetime import datetime, timedelta
-import numpy as np
-import plotly
-import plotly.plotly as py
-import plotly.graph_objs as go
 import json
+from datetime import datetime, timedelta
 
+import plotly
+import plotly.graph_objs as go
+from flask import Flask, render_template, request, session, url_for, redirect, make_response
+
+from dao.functions_for_user import *
+from forms.login import LoginForm
+from forms.registration import RegForm
+from forms.work_with_db import AddDBForm, DeleteDBForm, GenerateDBForm
+from forms.work_with_excel_file import FilterExcelDataForm, DeleteExcelDataForm, ExcelDataForm, ChooseExcelForm, \
+    AddExcelForm
+from forms.work_with_user import UpdateUserForm, AddUserForm
 
 app = Flask(__name__)
 app.secret_key = 'development key'
@@ -57,8 +57,10 @@ def login():
                     break
 
         if not is_exist:
+            session.pop('login', None)
             return render_template('login.html', form=login_form, message='User with current login does not exists.')
         elif not correct_pass:
+            session.pop('login', None)
             return render_template('login.html', form=login_form, message='You entered wrong passsword. Forgot your password? Try to remember!!!')
         else:
             if login_form.validate():
@@ -69,6 +71,7 @@ def login():
                 response.set_cookie('login', request.form['login'], expires=expires)
                 return response
             else:
+                session.pop('login', None)
                 return render_template('login.html', form=login_form)
     else:
         if 'login' in session:
@@ -89,6 +92,7 @@ def registration():
     userList = getUserList()
     if request.method == 'POST':
         if not reg_form.validate():
+            session.pop('login', None)
             return render_template('registration.html', form=reg_form)
         else:
             is_unique = True
@@ -98,6 +102,7 @@ def registration():
                     break
 
             if not is_unique:
+                session.pop('login', None)
                 return render_template('registration.html', form=reg_form, is_unique='User with current login already exists.')
             else:
                 user_login, message = regUser(
@@ -107,6 +112,7 @@ def registration():
                 )
 
                 if message != 'Operation successful':
+                    session.pop('login', None)
                     return render_template('registration.html', form=reg_form, message=message)
 
                 session['login'] = user_login
@@ -116,6 +122,7 @@ def registration():
                 response.set_cookie('login', user_login, expires=expires)
                 return response
 
+    session.pop('login', None)
     return render_template('registration.html', form=reg_form)
 
 
@@ -296,7 +303,7 @@ def databases():
                     return render_template('database.html', add_form=add_form, delete_form=delete_form,
                                            login=login, add_message=message, db_name='')
                 else:
-                    return render_template('database.html', add_form=add_form, delete_form=delete_form,
+                        return render_template('database.html', add_form=add_form, delete_form=delete_form,
                                            login=login, add_message="Database with current name already exists.")
         elif delete_form.delete.data or delete_form.show_data.data:
             if not delete_form.validate():
