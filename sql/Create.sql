@@ -55,6 +55,7 @@ create table Database
    user_login_fk        VARCHAR2(30)         not null,
    database_size        INTEGER              not null,
    database_time        DATE                 not null,
+   deleted              DATE,
    constraint PK_DATABASE primary key (database_name)
 );
 
@@ -72,9 +73,9 @@ create table "Database generation"
 (
    database_generation_time DATE                 not null,
    new_database_name    VARCHAR2(200)        not null,
-   excel_file_name_fk   VARCHAR2(200)        not null,
+   excel_file_name_fk   VARCHAR2(200),
    user_login_fk        VARCHAR2(30)         not null,
-   rule_data_address_fk VARCHAR2(50)         not null,
+   rule_data_address_fk VARCHAR2(50),
    database_name_fk     VARCHAR2(200),
    constraint "PK_DATABASE GENERATION" primary key (database_generation_time, new_database_name, excel_file_name_fk, user_login_fk, rule_data_address_fk)
 );
@@ -104,6 +105,7 @@ create table "Excel file"
    user_login_fk        VARCHAR2(30)         not null,
    excel_file_size      INTEGER              not null,
    excel_file_time      DATE                 not null,
+   deleted              DATE,
    constraint "PK_EXCEL FILE" primary key (excel_file_name, user_login_fk)
 );
 
@@ -128,11 +130,12 @@ create table Role
 /*==============================================================*/
 create table Rule 
 (
-   excel_file_name_fk   VARCHAR2(200)        not null,
+   excel_file_name_fk   VARCHAR2(200),
    user_login_fk        VARCHAR2(30)         not null,
    rule_data_address    VARCHAR2(50)         not null,
    rule_data_content    VARCHAR2(1000),
    rule_data_type       VARCHAR2(30)         not null,
+   deleted              DATE,
    constraint PK_RULE primary key (excel_file_name_fk, user_login_fk, rule_data_address)
 );
 
@@ -220,5 +223,29 @@ alter table Role
 alter table Rule
     add constraint data_type_values check (rule_data_type in ('Integer', 'Float', 'Boolean', 'Date', 'Time', 'String'));
     
+alter table "Excel file"
+    add constraint excel_file_name_content check (Regexp_like(excel_file_name, '([A-Za-z]:\\|\\){1}([A-Za-z0-9-_]{1,}\\|[A-Za-z0-9-_]{1,}){1,}'));
+    
+alter table "Excel file"
+    add constraint excel_file_name_length check (length(excel_file_name) <= 30);
+    
+alter table Database
+    add constraint database_name_content check (Regexp_like(database_name, '([A-Za-z]:\\|\\){1}([A-Za-z0-9-_]{1,}\\|[A-Za-z0-9-_]{1,}){1,}'));
+    
+alter table Database
+    add constraint database_name_length check (length(database_name) <= 30);
+    
 alter table "Database generation"
-    add constraint new_database_name_path_match check (new_database_name = database_name_fk);
+    add constraint new_database_name_content check (Regexp_like(new_database_name, '([A-Za-z]:\\|\\){1}([A-Za-z0-9-_]{1,}\\|[A-Za-z0-9-_]{1,}){1,}'));
+    
+alter table "Database generation"
+    add constraint new_database_name_length check (length(new_database_name) <= 30);
+    
+alter table Rule
+    add constraint rule_data_address_content check (Regexp_like(rule_data_address, '[A-Z]{1,4}[0-9]{1,4}'));
+    
+alter table Rule
+    add constraint rule_data_address_length check (length(rule_data_address) >= 2 and length(rule_data_address) <= 8);
+    
+alter table Rule
+    add constraint rule_data_content_length check (length(rule_data_content) <= 50);

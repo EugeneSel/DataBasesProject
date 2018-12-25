@@ -43,11 +43,11 @@ INSERT INTO Rule(excel_file_name_fk, user_login_fk, rule_data_address, rule_data
 INSERT INTO Rule(excel_file_name_fk,user_login_fk, rule_data_address, rule_data_content, rule_data_type)
     VALUES('\first', 'EugeneSel', 'E7', 'True', 'Boolean');
     
-INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
-    VALUES('C:\first', 'EugeneSel', 'A1', TIMESTAMP'2018-11-04 00:12:42', 'D:\new_first', '');
-INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
-    VALUES('\first', 'EugeneSel', 'E7', TIMESTAMP'2018-11-04 00:12:42', 'D:\new_second', '');
-INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
-    VALUES('\second', 'JohnElton', 'C13', TIMESTAMP'2018-11-04 00:12:42', 'E:\new_second', '');
-INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
-    VALUES('C:\third', 'tamerlan', 'B4', TIMESTAMP'2018-11-04 00:12:42', 'E:\third', 'E:\third');
+--INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
+--    VALUES('C:\first', 'EugeneSel', 'A1', TIMESTAMP'2018-11-04 00:12:42', 'D:\new_first', '');
+--INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
+--    VALUES('\first', 'EugeneSel', 'E7', TIMESTAMP'2018-11-04 00:12:42', 'D:\new_second', '');
+--INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
+--    VALUES('\second', 'JohnElton', 'C13', TIMESTAMP'2018-11-04 00:12:42', 'E:\new_second', '');
+--INSERT INTO "Database generation"(excel_file_name_fk, user_login_fk, rule_data_address_fk, database_generation_time, new_database_name, database_name_fk)
+--    VALUES('C:\third', 'tamerlan', 'B4', TIMESTAMP'2018-11-04 00:12:42', 'E:\third', 'E:\third');
