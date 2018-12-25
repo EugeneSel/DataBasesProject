@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistics</title>
+</head>
+<body>
+    <h1>{{ login }}</h1>
+    <a href = "/">Back to main menu</a> <br>
+    <a href = "/logout">Click here to log out</a>
+
+    <div><h3>Your Excel files and Databases creation timeline</h3></div>
+    <div id="scatter"></div>
+
+    <div><h3>Non-empty cells amount in each of Your Excel file</h3></div>
+    <div id="bar"></div>
+
+</body>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <script type="text/javascript">
+        var graphScatter = {{graphJSONscatter | safe}};
+        var graphBar = {{graphJSONbar | safe}};
+
+        Plotly.plot('scatter',graphScatter,{});
+        Plotly.plot('bar',graphBar,{});
+    </script>
+</html>

@@ -1,12 +1,16 @@
 from flask import Flask, render_template, request, flash, session, url_for, redirect, make_response
 from forms.registration import RegForm
 from forms.login import LoginForm
-from forms.work_with_excel_file import ExcelForm, ChooseExcelForm, AddExcelForm
+from forms.work_with_excel_file import FilterExcelDataForm, DeleteExcelDataForm, ExcelDataForm, ChooseExcelForm, AddExcelForm
 from forms.work_with_db import AddDBForm, DeleteDBForm, GenerateDBForm
 from forms.work_with_user import UpdateUserForm, AddUserForm
 from dao.functions_for_user import *
 from datetime import datetime, timedelta
 import numpy as np
+import plotly
+import plotly.plotly as py
+import plotly.graph_objs as go
+import json
 
 
 app = Flask(__name__)
@@ -17,21 +21,22 @@ app.secret_key = 'development key'
 def index():
     if 'login' in session:
         login = session['login']
-        session['role'] = getUserList(login)[0][1]
-        role = session['role']
-        if login is None:
-            return "<div>You are not logged in <br><a href = '/login'></b>" + "Click here to log in</b></a><br>" + \
-                    "<a href='/registration'></b>Or here to create an account</b></a></div>"
-        return render_template('index.html', login=login, role=role)
-    else:
-        login = request.cookies.get('login')
-        session['login'] = login
-        session['role'] = getUserList(login)[0][1]
-        role = session['role']
         if login is None:
             return "<div>You are not logged in <br><a href = '/login'></b>" + "Click here to log in</b></a><br>" + \
                     "<a href='/registration'></b>Or here to create an account</b></a></div>"
         else:
+            session['role'] = getUserList(login)[0][1]
+            role = session['role']
+            return render_template('index.html', login=login, role=role)
+    else:
+        login = request.cookies.get('login')
+        session['login'] = login
+        if login is None:
+            return "<div>You are not logged in <br><a href = '/login'></b>" + "Click here to log in</b></a><br>" + \
+                    "<a href='/registration'></b>Or here to create an account</b></a></div>"
+        else:
+            session['role'] = getUserList(login)[0][1]
+            role = session['role']
             return render_template('index.html', login=login, role=role)
 
 
@@ -116,7 +121,7 @@ def registration():
 
 @app.route('/ChooseExcelFile', methods=['GET', 'POST'])
 def choose_excel_file():
-    if session['role'] is None or session['role'] == 'Banned':
+    if 'login' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -129,7 +134,7 @@ def choose_excel_file():
         if add_form.add.data:
             if not add_form.validate():
                 return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form,
-                                       login=login, add_message='Please, enter file name')
+                                       login=login)
             else:
                 is_unique = True
                 for file in fileList:
@@ -138,16 +143,14 @@ def choose_excel_file():
                         break
 
                 if is_unique:
-                    file_name = addExcelFile(request.form['file_name'], session['login'])
+                    message = addExcelFile(request.form['file_name'], session['login'])
                     fileList = getExcelFileList(session['login'])
                     choose_form.file_list.choices = [(int(fileList.index(current)), current[0]) for current in fileList]
                     return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form,
-                                           login=login,
-                                           add_message="%s file successfully created" % file_name)
+                                           login=login, add_message=message)
                 else:
                     return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form,
-                                           login=login,
-                                           add_message="Excel file with current name already exists.")
+                                           login=login, add_message="Excel file with current name already exists.")
         elif choose_form.update.data or choose_form.delete.data:
             if not choose_form.validate():
                 return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form, login=login, del_message='You didn`t choose any file.')
@@ -179,10 +182,12 @@ def choose_excel_file():
 
 @app.route('/ExcelEditor', methods=['GET', 'POST'])
 def excel_file():
-    if session['role'] is None or session['role'] == 'Banned':
+    if 'login' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
-    excel_form = ExcelForm()
+    delete_form = DeleteExcelDataForm()
+    update_form = ExcelDataForm()
+    filter_form = FilterExcelDataForm()
     login = session['login']
 
     if session['file_name'] is None:
@@ -190,47 +195,80 @@ def excel_file():
 
     file_name = session['file_name']
     dataList = getRuleList(login, file_name)
+    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
     if request.method == 'POST':
-        if not excel_form.validate():
-            return render_template('excel_file.html', form=excel_form, login=login, data=dataList, file_name=file_name)
-        else:
-            if excel_form.update.data:
-                message = updateData(
-                    file_name,
-                    request.form['cell_address'],
-                    request.form['cell_data']
-                )
-            elif excel_form.add.data:
-                message = addData(
-                    file_name,
-                    request.form['cell_address'],
-                    request.form['cell_data'],
-                    request.form['cell_type']
-                )
-            elif excel_form.delete.data:
+        if delete_form.delete.data:
+            if not delete_form.validate():
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
+                                       login=login, data=dataList, file_name=file_name, del_message='You didn`t choose any cell.')
+            else:
+                print(dataList[int(request.form['data_list'])][2])
                 message = deleteData(
                     file_name,
-                    request.form['cell_address']
+                    dataList[int(request.form['data_list'])][2]
                 )
-            dataList = getRuleList(login, file_name)
-            return render_template('excel_file.html', form=excel_form, login=login, message=message, data=dataList, file_name=file_name)
+                dataList = getRuleList(login, file_name)
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
+                                       login=login, del_message=message, data=dataList, file_name=file_name)
+        elif update_form.add.data or update_form.update.data:
+            if not update_form.validate():
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
+                                       login=login, data=dataList, file_name=file_name)
+            else:
+                if update_form.update.data:
+                    message = updateData(
+                        file_name,
+                        request.form['cell_address'],
+                        request.form['cell_data'],
+                        request.form['cell_type']
+                    )
+                elif update_form.add.data:
+                    message = addData(
+                        file_name,
+                        request.form['cell_address'],
+                        request.form['cell_data'],
+                        request.form['cell_type']
+                    )
+                dataList = getRuleList(login, file_name)
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form, login=login,
+                                       update_message=message, data=dataList, file_name=file_name)
+        elif filter_form.find.data:
+            if not filter_form.validate():
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
+                                       login=login, data=dataList, file_name=file_name)
+            else:
+                dataList = getRuleList(login, file_name, request.form['f_cell_address'])
+                if not dataList:
+                    dataList = getRuleList(login, file_name)
+                    delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                    return render_template('excel_file.html', update_form=update_form, delete_form=delete_form,
+                                           filter_form=filter_form, login=login, data=dataList, file_name=file_name,
+                                           filter_message='Can`t find non-empty cell %s in current file.' % request.form['f_cell_address'])
+                delete_form.data_list.choices = [(int(dataList.index(current)), current[2:]) for current in dataList]
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form,
+                                       filter_form=filter_form, login=login, data=dataList, file_name=file_name,
+                                       filter_message='Cell %s found successfully.' % request.form['f_cell_address'])
     else:
         if 'login' in session:
             if login is None:
                 return redirect(url_for('index'))
-            return render_template('excel_file.html', form=excel_form, login=login, data=dataList, file_name=file_name)
+            return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form, login=login,
+                                   data=dataList, file_name=file_name)
         else:
             login = request.cookies.get('login')
             session['login'] = login
             if login is None:
                 return redirect(url_for('index'))
             else:
-                return render_template('excel_file.html', form=excel_form, login=login, is_exist='', data=dataList, file_name=file_name)
+                return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form, login=login,
+                                       data=dataList, file_name=file_name)
 
 
 @app.route('/Databases', methods=['GET', 'POST'])
 def databases():
-    if session['role'] is None or session['role'] == 'Banned':
+    if 'login' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -252,28 +290,37 @@ def databases():
                         break
 
                 if is_unique:
-                    db_name = addDatabase(request.form['db_name'], session['login'])
+                    message = addDatabase(request.form['db_name'], session['login'])
                     dbList = getDatabaseList(session['login'])
                     delete_form.db_list.choices = [(int(dbList.index(current)), current[0]) for current in dbList]
                     return render_template('database.html', add_form=add_form, delete_form=delete_form,
-                                           login=login,
-                                           add_message="%s Database successfully created." % db_name)
+                                           login=login, add_message=message, db_name='')
                 else:
                     return render_template('database.html', add_form=add_form, delete_form=delete_form,
-                                           login=login,
-                                           add_message="Database with current name already exists.")
-        elif delete_form.delete.data:
+                                           login=login, add_message="Database with current name already exists.")
+        elif delete_form.delete.data or delete_form.show_data.data:
             if not delete_form.validate():
                 return render_template('database.html', add_form=add_form, delete_form=delete_form,
                                        login=login, del_message='Please, choose the Database.')
             else:
-                db_name = dbList[int(request.form['db_list'])][0]
-                db_name = deleteDatabase(db_name, session['login'])
-                dbList = getDatabaseList(session['login'])
-                delete_form.db_list.choices = [(int(dbList.index(current)), current[0]) for current in dbList]
-                return render_template('database.html', add_form=add_form, delete_form=delete_form,
-                                       login=login,
-                                       del_message="%s Database successfully deleted" % db_name)
+                if delete_form.show_data.data:
+                    db_name = dbList[int(request.form['db_list'])][0]
+                    new_db_list = getDBDataList(login, db_name)
+                    data_list = []
+                    for i in range(len(new_db_list)):
+                        print(getRuleList(login, new_db_list[i][2], new_db_list[i][4]))
+                        data_list.append(getRuleList(login, new_db_list[i][2], new_db_list[i][4])[0])
+                    if not data_list:
+                        data_list.append('This Database is empty')
+                    return render_template('database.html', add_form=add_form, delete_form=delete_form, login=login,
+                                           data_list=data_list, db_name=db_name)
+                elif delete_form.delete.data:
+                    db_name = dbList[int(request.form['db_list'])][0]
+                    db_name = deleteDatabase(db_name, session['login'])
+                    dbList = getDatabaseList(session['login'])
+                    delete_form.db_list.choices = [(int(dbList.index(current)), current[0]) for current in dbList]
+                    return render_template('database.html', add_form=add_form, delete_form=delete_form,
+                                           login=login, del_message="%s Database successfully deleted" % db_name)
     else:
         if 'login' in session:
             if login is None:
@@ -290,7 +337,7 @@ def databases():
 
 @app.route('/Users', methods=['GET', 'POST'])
 def users():
-    if session['role'] is None or session['role'] != 'Admin':
+    if 'login' not in session or session['role'] != 'Admin':
         return redirect(url_for('index'))
 
     update_form = UpdateUserForm()
@@ -302,7 +349,7 @@ def users():
     if request.method == 'POST':
         if update_form.change_role.data or update_form.delete.data:
             if not update_form.validate():
-                return render_template('user.html', update_form=update_form, add_form=add_form, login=login)
+                return render_template('user.html', update_form=update_form, add_form=add_form, login=login, update_message='You didn`t choose any User.')
             else:
                 if update_form.change_role.data:
                     user_login = userList[int(request.form['user_list'])][0]
@@ -367,7 +414,7 @@ def users():
 
 @app.route('/ChooseFileForNewDatabase', methods=['GET', 'POST'])
 def choose_file_for_db():
-    if session['role'] is None or session['role'] == 'Banned':
+    if 'login' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -399,7 +446,7 @@ def choose_file_for_db():
 
 @app.route('/DatabaseGeneration', methods=['GET', 'POST'])
 def database_generation():
-    if session['role'] is None or session['role'] == 'Banned':
+    if 'login' not in session or session['role'] == 'Banned':
         return redirect(url_for('index'))
 
     login = session['login']
@@ -410,8 +457,7 @@ def database_generation():
     file_name = session['file_name']
     dataList = getRuleList(login, file_name)
     databaseList = getDatabaseList(login)
-    newDatabaseList = getGeneratedDatabaseList(login)
-
+    newDatabaseList = getDBDataList(login)
 
     gen_form = GenerateDBForm()
     if request.method == 'POST':
@@ -433,10 +479,10 @@ def database_generation():
                 for current in dataList:
                     if request.form.getlist(current[2]):
                         chosenDataList.append(current)
-                        file_name, new_db_name = chooseData(file_name, session['login'], current[2], request.form['new_db_name'])
-                new_db_name = addDatabase(request.form['new_db_name'], session['login'])
+                        file_name, message = chooseData(file_name, session['login'], current[2], request.form['new_db_name'])
+                message = addDatabase(request.form['new_db_name'], session['login'])
                 databaseList = getDatabaseList(login)
-                return render_template('database_generation.html', gen_form=gen_form, login=login, file_name=file_name, databaseList=databaseList, dataList=dataList, gen_message='%s generated successfully and includes such data:' % new_db_name, chosenData=chosenDataList)
+                return render_template('database_generation.html', gen_form=gen_form, login=login, file_name=file_name, databaseList=databaseList, dataList=dataList, gen_message=message, chosenData=chosenDataList)
             else:
                 return render_template('database_generation.html', gen_form=gen_form, login=login, file_name=file_name, databaseList=databaseList, dataList=dataList,
                                        gen_message="Database with current name already exists.")
@@ -452,6 +498,41 @@ def database_generation():
                 return redirect(url_for('index'))
             else:
                 return render_template('database_generation.html', gen_form=gen_form, login=login, file_name=file_name, databaseList=databaseList, dataList=dataList)
+
+
+@app.route('/Statistics', methods=['GET'])
+def plots():
+    if 'login' not in session or session['role'] == 'Banned':
+        return redirect(url_for('index'))
+
+    login = session['login']
+    fileList = getAllExcelFileList(login)
+    dbList = getAllDatabaseList(login)
+    countList = countExcelDataList(login)
+
+    traceExcel = go.Scatter(
+        x=[current[3] for current in fileList],
+        y=[current[0] for current in fileList],
+        name='Excel files'
+    )
+
+    traceDB = go.Scatter(
+        x=[current[3] for current in dbList],
+        y=[current[0] for current in dbList],
+        name='Databases'
+    )
+
+    countExcelData = go.Bar(
+        x=[current[0] for current in countList],
+        y=[current[1] for current in countList]
+    )
+
+    dataScatter = [traceExcel, traceDB]
+    dataBar = [countExcelData]
+    graphJSONscatter = json.dumps(dataScatter, cls=plotly.utils.PlotlyJSONEncoder)
+    graphJSONbar = json.dumps(dataBar, cls=plotly.utils.PlotlyJSONEncoder)
+    return render_template('statistics.html', login=login,
+                           graphJSONscatter=graphJSONscatter, graphJSONbar=graphJSONbar)
 
 
 @app.route('/logout')

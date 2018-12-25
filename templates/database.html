@@ -21,12 +21,20 @@
                         <div>
                             {{ delete_form.db_list.label }}
                             {% for current in delete_form.db_list %}
-                                <div> {{ current }} {{ current.label }}</div>
+                                <div>
+                                    {{ current }} {{ current.label.text }}
+                                    {% if current.label.text == db_name %}
+                                        <p>Current Database data</p>
+                                        {% for cell in data_list %}
+                                            <div> {{ cell }} </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
                             {% endfor %}
                         </div>
 
                         <div> {{ del_message }} </div>
-                        <div> {{ delete_form.delete }} </div>
+                        <div> {{ delete_form.show_data }} {{ delete_form.delete }} </div>
                     </div>
                 </fieldset>
             </form>

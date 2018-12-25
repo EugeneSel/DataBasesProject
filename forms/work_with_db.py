@@ -6,6 +6,8 @@ from wtforms import validators
 class DeleteDBForm(FlaskForm):
     db_list = RadioField("List of Your Databases", coerce=int)
 
+    show_data = SubmitField("Show data")
+
     delete = SubmitField("Delete")
 
 

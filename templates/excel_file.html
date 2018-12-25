@@ -10,58 +10,105 @@
             <h1>{{ login }}</h1>
             <a href="/ChooseExcelFile">Back</a> <br>
             <a href = '/logout'>Click here to log out</a>
+            <div>
+                <h2>Work with {{ file_name }} </h2>
+            </div>
 
             <form action="http://localhost:5000/ExcelEditor" method="POST">
                 <fieldset>
-                    <legend>Excel editor 2.0</legend>
+                    <legend>
+                        Excel editor 2.0 <br>
+                        Choose cell you`d like to clear
+                    </legend>
                     <div>
-                        <h2>Work with {{ file_name }} </h2>
                     </div>
 
-                    {{ form.hidden_tag() }}
+                    {{ delete_form.hidden_tag() }}
 
                     <div>
-                        <div>
-                            {{ form.cell_address.label }}     {{ form.cell_address }}
-
-                            <br>
-                                {% for message in form.cell_address.errors %}
-                                    <div> {{ message }} </div>
-                                {% endfor %}
-                            <br>
-                        </div>
 
                         <div>
-                            {{ form.cell_data.label }}     {{ form.cell_data }}
-
-                            <br>
-                                {% for message in form.cell_data.errors %}
-                                    <div> {{ message }} </div>
-                                {% endfor %}
-                            <br>
+                            {{  delete_form.data_list.label }}     {{  delete_form.data_list }}
                         </div>
 
-                        <div>
-                            {{ form.cell_type.label }}     {{ form.cell_type }}
+                        <div> {{ del_message }} </div>
 
-                            <br>
-                                {% for message in form.cell_type.errors %}
-                                    <div> {{ message }} </div>
-                                {% endfor %}
-                            <br>
-                        </div>
-
-                        <div> {{ message }} </div>
-
-                        <div>{{ form.add }} {{ form.update }} {{ form.delete }}</div>
+                        <div> {{ delete_form.delete }} </div>
                     </div>
                 </fieldset>
             </form>
 
+            <form action="http://localhost:5000/ExcelEditor" method="POST">
+                <fieldset>
+                    <legend>You can also update data or add new data:</legend>
+                    <div>
+                    </div>
 
-            {% for current in data %}
-                <div> {{ current }} </div>
-            {% endfor %}
+                    {{ update_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ update_form.cell_address.label }}     {{ update_form.cell_address }}
+
+                            <br>
+                                {% for message in update_form.cell_address.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ update_form.cell_data.label }}     {{ update_form.cell_data }}
+
+                            <br>
+                                {% for message in update_form.cell_data.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div>
+                            {{ update_form.cell_type.label }}     {{ update_form.cell_type }}
+
+                            <br>
+                                {% for message in update_form.cell_type.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div> {{ update_message }} </div>
+
+                        <div> {{ update_form.add }} {{ update_form.update }} </div>
+                    </div>
+                </fieldset>
+            </form>
+
+             <form action="http://localhost:5000/ExcelEditor" method="POST">
+                <fieldset>
+                    <legend>Or find some data:</legend>
+                    <div>
+                    </div>
+
+                    {{ filter_form.hidden_tag() }}
+
+                    <div>
+                        <div>
+                            {{ filter_form.f_cell_address.label }}     {{ filter_form.f_cell_address }}
+
+                            <br>
+                                {% for message in filter_form.f_cell_address.errors %}
+                                    <div> {{ message }} </div>
+                                {% endfor %}
+                            <br>
+                        </div>
+
+                        <div> {{ filter_message }} </div>
+
+                        <div> {{ filter_form.find }} </div>
+                    </div>
+                </fieldset>
+            </form>
         </div>
     </div>
 </body>

@@ -33,7 +33,6 @@
                         <div>
                             <p>List of data:</p>
                             {% for current in dataList %}
-                                {{ dataList.index(current) }} {{ current[2] }}
                                 <ul>
                                     <li><input type="checkbox" name="{{ current[2] }}" id="{{ dataList.index(current) }}" value="{{ dataList.index(current) }}">{{ current }}</li>
                                 </ul>

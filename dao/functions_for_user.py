@@ -59,6 +59,22 @@ def getExcelFileList(user_login, file_name=None):
     return result
 
 
+def getAllExcelFileList(user_login):
+    connection = cx_Oracle.connect(username, password, databaseName)
+
+    cursor = connection.cursor()
+
+    query = "Select * From \"Excel file\" Where user_login_fk = '%s'" % user_login
+    cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return result
+
+
 def getDatabaseList(user_login, db_name=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
@@ -79,17 +95,15 @@ def getDatabaseList(user_login, db_name=None):
     return result
 
 
-def getGeneratedDatabaseList(user_login):
+def getAllDatabaseList(user_login, db_name=None):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    query = 'SELECT * FROM "Database generation" Where user_login_fk = \'%s\'' % user_login
+    query = "Select * From Database Where user_login_fk = '%s'" % user_login
     cursor.execute(query)
+
     result = cursor.fetchall()
-    # current_user_login = cursor.callfunc("OUTPUT_FOR_USER.GET_USER_LIST", cx_Oracle.STRING, ["USER_LOGIN"])
-    # cursor.execute(current_user_login)
-    # result = cursor.fetchall()
 
     cursor.close()
     connection.close()
@@ -97,17 +111,36 @@ def getGeneratedDatabaseList(user_login):
     return result
 
 
-def getRuleList(user_login, file_name=None):
+def countExcelDataList(user_login):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    if not file_name:
+    query = "Select excel_file_name_fk, count(*) From Rule Where user_login_fk = '%s' Group by excel_file_name_fk" % user_login
+    cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return result
+
+
+def getRuleList(user_login, file_name=None, cell_address=None):
+    connection = cx_Oracle.connect(username, password, databaseName)
+
+    cursor = connection.cursor()
+
+    if not file_name and not cell_address:
         query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_RULE_LIST(:user_login))'
         cursor.execute(query, user_login=user_login)
-    else:
+    elif not cell_address:
         query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_RULE_LIST(:user_login, :file_name))'
         cursor.execute(query, user_login=user_login, file_name=file_name)
+    else:
+        query = 'SELECT * FROM table(OUTPUT_FOR_USER.GET_RULE_LIST(:user_login, :file_name, :cell_address))'
+        cursor.execute(query, user_login=user_login, file_name=file_name, cell_address=cell_address)
 
     result = cursor.fetchall()
 
@@ -141,13 +174,14 @@ def addExcelFile(file_name, user_login):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
+    message = cursor.var(cx_Oracle.STRING)
 
-    cursor.callproc("WORK_WITH_EXCEL_FILE.ADD_FILE", [file_name, user_login])
+    cursor.callproc("WORK_WITH_EXCEL_FILE.ADD_FILE", [file_name, user_login, message])
 
     cursor.close()
     connection.close()
 
-    return file_name
+    return message.getvalue()
 
 
 def deleteExcelFile(file_name, user_login):
@@ -167,13 +201,14 @@ def addDatabase(db_name, user_login):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
+    message = cursor.var(cx_Oracle.STRING)
 
-    cursor.callproc("WORK_WITH_DB.ADD_DB", [db_name, user_login])
+    cursor.callproc("WORK_WITH_DB.ADD_DB", [db_name, user_login, message])
 
     cursor.close()
     connection.close()
 
-    return db_name
+    return message.getvalue()
 
 
 def deleteDatabase(db_name, user_login):
@@ -215,12 +250,12 @@ def deleteUser(login):
     return login
 
 
-def updateData(file_name, cell, new_data):
+def updateData(file_name, cell, new_data, new_data_type):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
 
-    message = cursor.callfunc("WORK_WITH_EXCEL_FILE.UPDATE_DATA", cx_Oracle.STRING, [file_name, cell, new_data])
+    message = cursor.callfunc("WORK_WITH_EXCEL_FILE.UPDATE_DATA", cx_Oracle.STRING, [file_name, cell, new_data, new_data_type])
 
     cursor.close()
     connection.close()
@@ -258,13 +293,14 @@ def chooseData(file_name, user_login, cell_address, db_name):
     connection = cx_Oracle.connect(username, password, databaseName)
 
     cursor = connection.cursor()
+    message = cursor.var(cx_Oracle.STRING)
 
-    cursor.callproc("DB_GENERATION.CHOOSE_DATA", [file_name, user_login, cell_address, db_name])
+    cursor.callproc("DB_GENERATION.CHOOSE_DATA", [file_name, user_login, cell_address, db_name, message])
 
     cursor.close()
     connection.close()
 
-    return file_name, db_name
+    return file_name, message.getvalue()
 
 
 def createDatabase(db_name):
