@@ -3,40 +3,36 @@ INSERT INTO Role (role_name)
 INSERT INTO Role (role_name)
     VALUES('Admin');
 INSERT INTO Role (role_name)
-    VALUES('Prime');
-INSERT INTO Role (role_name)
     VALUES('Default');
-INSERT INTO Role (role_name)
-    VALUES('Guest');
 
 INSERT INTO "User"(user_login, user_password, role_name_fk, user_email)
     VALUES('EugeneSel', 'anubis123', 'Admin', 'youdjin.sel15@gmail.com');
 INSERT INTO "User"(user_login, user_password, role_name_fk, user_email)
-    VALUES('JohnElton', 'iamthebest', 'Prime', '');
+    VALUES('JohnElton', 'iamthebest', 'Default', '');
 INSERT INTO "User"(user_login, user_password, role_name_fk, user_email)
     VALUES('vadimkakhd', '321sibuna', 'Banned', ''); 
 INSERT INTO "User"(user_login, user_password, role_name_fk, user_email)
-    VALUES('tamerlan', 'rarestudent10', 'Guest', 'okay@gmail.com'); 
+    VALUES('tamerlan', 'rarestudent10', 'Default', 'okay@gmail.com'); 
 INSERT INTO "User"(user_login, user_password, role_name_fk, user_email)
     VALUES('EugeneSel2', 'anubis1234', 'Default', 'youdjin.sel16@gmail.com'); 
     
 INSERT INTO "Excel file"(excel_file_name, excel_file_size, excel_file_time, USER_LOGIN_FK)
-    VALUES('C:\first', 132.0, '03.11.2018', 'EugeneSel'); 
+    VALUES('C:\first', 132.0, TIMESTAMP'2018-11-04 00:12:42', 'EugeneSel'); 
 INSERT INTO "Excel file"(excel_file_name, excel_file_size, excel_file_time, USER_LOGIN_FK)
-    VALUES('\second', 122.0, '04.11.2018', 'JohnElton');  
+    VALUES('\second', 122.0, TIMESTAMP'2018-11-05 00:12:42', 'JohnElton');  
 INSERT INTO "Excel file"(excel_file_name, excel_file_size, excel_file_time, USER_LOGIN_FK)
-    VALUES('C:\third', 142.0, '05.11.2018', 'tamerlan'); 
+    VALUES('C:\third', 142.0, TIMESTAMP'2018-11-06 00:12:42', 'tamerlan'); 
 INSERT INTO "Excel file"(excel_file_name, excel_file_size, excel_file_time, USER_LOGIN_FK)
-    VALUES('\first', 152.0, '06.11.2018', 'EugeneSel'); 
+    VALUES('\first', 152.0, TIMESTAMP'2018-11-07 00:12:42', 'EugeneSel'); 
     
 INSERT INTO Database(database_name, database_size, database_time, USER_LOGIN_FK)
-    VALUES('E:\first', 152.0, Sysdate, 'EugeneSel'); 
+    VALUES('E:\first', 152.0, TIMESTAMP'2018-11-04 00:12:42', 'EugeneSel'); 
 INSERT INTO Database(database_name, database_size, database_time, USER_LOGIN_FK)
-    VALUES('E:\second', 162.0, Sysdate, 'JohnElton'); 
+    VALUES('E:\second', 162.0, TIMESTAMP'2018-11-05 00:12:42', 'JohnElton'); 
 INSERT INTO Database(database_name, database_size, database_time, USER_LOGIN_FK)
-    VALUES('E:\third', 172.0, Sysdate, 'vadimkakhd'); 
+    VALUES('E:\third', 172.0, TIMESTAMP'2018-11-06 00:12:42', 'vadimkakhd'); 
 INSERT INTO Database(database_name, database_size, database_time, USER_LOGIN_FK)
-    VALUES('D:\first', 182.0, Sysdate, 'EugeneSel2'); 
+    VALUES('D:\first', 182.0, TIMESTAMP'2018-11-07 00:12:42', 'EugeneSel2'); 
 
 INSERT INTO Rule(excel_file_name_fk, user_login_fk, rule_data_address, rule_data_content, rule_data_type)
     VALUES('C:\third', 'tamerlan', 'B4', '-175', 'Integer');

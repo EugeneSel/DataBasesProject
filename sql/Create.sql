@@ -203,7 +203,7 @@ alter table Database
     add constraint database_size_positive check (database_size >= 0);
     
 alter table "User"
-    add constraint user_login_length check (length(user_login) >= 8);
+    add constraint user_login_length check (length(user_login) >= 4);
 
 alter table "User"
     add constraint user_login_content check (Regexp_like(user_login, '[A-Za-z0-9_]'));
@@ -215,7 +215,7 @@ alter table "User"
     add constraint user_email_content check (Regexp_like(user_email, '[a-z0-9.@]'));
     
 alter table Role
-    add constraint role_name_values check (role_name in ('Banned', 'Admin', 'Prime', 'Default', 'Guest'));
+    add constraint role_name_values check (role_name in ('Banned', 'Admin', 'Default'));
     
 alter table Rule
     add constraint data_type_values check (rule_data_type in ('Integer', 'Float', 'Boolean', 'Date', 'Time', 'String'));

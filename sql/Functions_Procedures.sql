@@ -1,36 +1,59 @@
 set serveroutput on
 
 Create or replace Package user_authorization as
-    Procedure registration(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, email in "User".user_email%TYPE);
+    Procedure registration(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, email in "User".user_email%TYPE, message out STRING, user_role in "User".role_name_fk%TYPE default 'Default');
     
-    Function log_in(login in "User".user_login%TYPE, pass in "User".user_password%TYPE)
+    Function log_in(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, message out STRING)
     Return "User".user_login%Type;
 End user_authorization;
 /
+
 Create or replace Package  body user_authorization as
-    Procedure registration(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, email in "User".user_email%TYPE)
+    Procedure registration(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, email in "User".user_email%TYPE, message out STRING, user_role in "User".role_name_fk%TYPE default 'Default')
     is
     Begin
+        
         INSERT INTO "User"(user_login, role_name_fk, user_password, user_email)
-            Values(login, 'Default', pass, email);
-        DBMS_OUTPUT.put_line('Registration successful');
+            Values(login, user_role, pass, email);
+        
+        message := 'Operation successful';
         Commit;
+    Exception
+        When OTHERS Then
+            If INSTR(SQLERRM, 'USER_EMAIL_UNIQUE') != 0 Then
+                message := 'Current e-mail is already used.';
+            Elsif INSTR(SQLERRM, 'USER_PASSWORD_UNIQUE') != 0 Then
+                message := 'Current password is already used.';
+            Elsif INSTR(SQLERRM, 'USER_LOGIN_CONTENT') != 0 Then
+                message := 'You entered a wrong login. Login could consist of latin letters and numbers. Please, repeat entering.';
+            Elsif INSTR(SQLERRM, 'USER_PASSWORD_CONTENT') != 0 Then
+                message := 'You entered a wrong password. Password could consist of latin letters and numbers. Please, repeat entering.';
+            Else
+                message := (SQLCODE || ' ' || SQLERRM);
+            End if;
     End registration;
     
-    Function log_in(login in "User".user_login%TYPE, pass in "User".user_password%TYPE)
+    Function log_in(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, message out STRING)
     Return "User".user_login%Type
     is
+        Cursor user_list is
+            Select * 
+            From "User";
     Begin
-        If login = output_for_user.get_user(login).user_login and pass = output_for_user.get_user(login).user_password Then
-            DBMS_OUTPUT.put_line('Successfully logged in');
-            Return login;
-        Else
-            DBMS_OUTPUT.put_line('You are not signed on yet. Please, sign on');
-            Return Null;
-        End if;
+        For current_element in user_list
+        Loop
+            If current_element.user_login = login Then
+                message := 'Successfully logged in';
+                Return login;
+            Else
+                message := 'You are not signed on yet. Please, sign on';
+                Return Null;
+            End if;
+        End loop;
     End log_in;
 End user_authorization;
 /
+
 Create or replace Package output_for_user as
     Type rowExcel is record(
         excel_file_name "Excel file".excel_file_name%TYPE,
@@ -40,12 +63,8 @@ Create or replace Package output_for_user as
     );
     
     Type tableExcel is table of rowExcel;
-    
-    Function get_excel_file(file_name in "Excel file".excel_file_name%TYPE)
-        Return tableExcel
-        Pipelined;
         
-    Function get_excel_file_list
+    Function get_excel_file_list(user_login in "User".user_login%TYPE, file_name in "Excel file".excel_file_name%TYPE default null)
         Return tableExcel
         Pipelined;
         
@@ -57,11 +76,8 @@ Create or replace Package output_for_user as
     );
     
     Type tableDB is table of rowDB;
-    
-    Function get_db(db_file_name in Database.database_name%TYPE)
-        Return rowDB;
         
-    Function get_db_list
+    Function get_db_list(user_login in "User".user_login%TYPE, db_name in Database.database_name%TYPE default null)
         Return tableDB
         Pipelined;
         
@@ -74,117 +90,176 @@ Create or replace Package output_for_user as
     
     Type tableUser is table of rowUser;
     
-    Function get_user(login in "User".user_login%TYPE)
-        Return rowUser;
-    
-    Function get_user_list
+    Function get_user_list(login in "User".user_login%TYPE default null)
         Return tableUser
+        Pipelined;
+        
+    Type rowRule is record(
+        file_name Rule.excel_file_name_fk%TYPE,
+        user_login Rule.user_login_fk%TYPE,
+        data_address Rule.rule_data_address%TYPE,
+        data_content Rule.rule_data_content%TYPE,
+        data_type Rule.rule_data_type%TYPE
+    );
+    
+    Type tableRule is table of rowRule;
+    
+    Function get_rule_list(login in Rule.user_login_fk%TYPE, file_name in Rule.excel_file_name_fk%TYPE default null)
+        Return tableRule
+        Pipelined;
+    
+    Type rowDBData is record(
+        db_time "Database generation".database_generation_time%TYPE,
+        new_db_name "Database generation".new_database_name%TYPE,
+        file_name "Database generation".excel_file_name_fk%TYPE,
+        user_login "Database generation".user_login_fk%TYPE,
+        data_address "Database generation".rule_data_address_fk%TYPE,
+        db_name "Database generation".database_name_fk%TYPE
+    );
+    
+    Type tableDBData is table of rowDBData;
+    
+    Function get_DBData_list(login in Rule.user_login_fk%TYPE, db_name in "Database generation".new_database_name%TYPE default null)
+        Return tableDBData
         Pipelined;
 End output_for_user;
 /
+
 Create or replace package body output_for_user as
-    Function get_excel_file(file_name in "Excel file".excel_file_name%TYPE)
+    Function get_excel_file_list(user_login in "User".user_login%TYPE, file_name in "Excel file".excel_file_name%TYPE default null)
         return tableExcel
         Pipelined
         is
-            is_exist Number(1, 0);
+            TYPE file_cursor_type IS REF CURSOR;
+            file_list  file_cursor_type;
             
-            Cursor file_list is
-                Select *
-                From "Excel file";
+            string_query VARCHAR2(300);
+            current_element rowExcel;
         begin
-            is_exist := 0;
-        
-            For current_element in file_list
-            Loop
-                If file_name = current_element.excel_file_name Then
-                    Pipe row(current_element);
-                    is_exist := 1;
-                    Exit;
-                End If;
-            End loop;
-            
-            If is_exist = 0 Then
-                DBMS_OUTPUT.put_line('Excel file with current name does not exist');
+            string_query := 'Select * 
+                                from "Excel file"
+                                where user_login_fk = trim('''||user_login||''')';
+                                
+            If file_name is not null Then
+                string_query := string_query || ' and trim(excel_file_name) = trim('''||file_name||''')';
             End if;
-        end get_excel_file;
         
-    Function get_excel_file_list
-        return tableExcel
-        Pipelined
-        is
-            Cursor file_list is
-                Select * 
-                from "Excel file";
-        begin
-            For current_element in file_list
+            Open file_list for string_query;
             Loop
+                Fetch file_list into current_element;
+                Exit when (file_list %NOTFOUND);
+                
                 Pipe row(current_element);      
             End loop;
         end get_excel_file_list;
         
-    Function get_db(db_file_name in Database.database_name%TYPE)
-        return rowDB
-        is
-            db_info rowDB;
-        begin
-            Select * into db_info
-            from Database
-            where database_name = db_file_name;
-            
-            If db_file_name != db_info.db_name Then
-                DBMS_OUTPUT.put_line('\nDatabase with current name does not exist');
-                return NULL;
-            End if;
-            
-            return db_info;
-        end get_db;
-        
-    Function get_db_list
+    Function get_db_list(user_login in "User".user_login%TYPE, db_name in Database.database_name%TYPE default null)
         return tableDB
         Pipelined
         is
-            Cursor db_list is
-                Select * 
-                from Database;
+            TYPE db_cursor_type IS REF CURSOR;
+            db_list  db_cursor_type;
+            
+            string_query VARCHAR2(300);
+            current_element rowDB;
         begin
-            For current_element in db_list
+            string_query := 'Select * 
+                                from Database
+                                where user_login_fk = trim('''||user_login||''')';
+                                
+            If db_name is not null Then
+                string_query := string_query || ' and trim(database_name) = trim('''||db_name||''')';
+            End if;
+        
+            Open db_list for string_query;
             Loop
-                Pipe row(current_element);
+                Fetch db_list into current_element;
+                Exit when (db_list %NOTFOUND);
+                
+                Pipe row(current_element);      
             End loop;
         end get_db_list;
         
-    Function get_user(login in "User".user_login%TYPE)
-        return rowUser
-        is
-            user_info rowUser;
-        begin
-            Select * into user_info
-            from "User"
-            where user_login = login;
-            
-            If login != user_info.user_login Then
-                DBMS_OUTPUT.put_line('\nUser with current login does not exist');
-                return NULL;
-            End if;
-            
-            return user_info;
-        end get_user;
-        
-    Function get_user_list
+    Function get_user_list(login in "User".user_login%TYPE default null)
         return tableUser
         Pipelined
         is
-            Cursor user_list is
-                Select * 
-                from "User";
+            TYPE user_cursor_type IS REF CURSOR;
+            user_list  user_cursor_type;
+            
+            string_query VARCHAR2(300);
+            current_element rowUser;
         begin
-            For current_element in user_list
+            string_query := 'Select * 
+                                from "User"';
+                                
+            If login is not null Then
+                string_query := string_query || ' where trim(user_login) = trim('''||login||''')';
+            End if;
+        
+            Open user_list for string_query;
             Loop
-                Pipe row(current_element);
+                Fetch user_list into current_element;
+                Exit when (user_list %NOTFOUND);
+                
+                Pipe row(current_element);      
             End loop;
         end get_user_list;
-end;
+        
+    Function get_rule_list(login in Rule.user_login_fk%TYPE, file_name in Rule.excel_file_name_fk%TYPE default null)
+        Return tableRule
+        Pipelined
+        is
+            TYPE rule_cursor_type IS REF CURSOR;
+            rule_list  rule_cursor_type;
+            
+            string_query VARCHAR2(300);
+            current_element rowRule;
+        Begin
+            string_query := 'Select * 
+                                from Rule
+                                where trim(user_login_fk) = trim('''||login||''')';
+            
+            If file_name is not null Then
+                string_query := string_query || ' and trim(excel_file_name_fk) = trim('''||file_name||''')';
+            End if;
+        
+            Open rule_list for string_query;
+            Loop
+                Fetch rule_list into current_element;
+                Exit when (rule_list %NOTFOUND);
+                
+                Pipe row(current_element);      
+            End loop;
+        end get_rule_list;
+        
+    Function get_DBData_list(login in Rule.user_login_fk%TYPE, db_name in "Database generation".new_database_name%TYPE default null)
+        Return tableDBData
+        Pipelined
+        is
+            TYPE data_cursor_type IS REF CURSOR;
+            data_list  data_cursor_type;
+            
+            string_query VARCHAR2(300);
+            current_element rowDBData;
+        Begin
+            string_query := 'Select * 
+                                from "Database generation"
+                                where trim(user_login_fk) = trim('''||login||''')';
+            
+            If db_name is not null Then
+                string_query := string_query || ' and trim(new_database_name) = trim('''||db_name||''')';
+            End if;
+        
+            Open data_list for string_query;
+            Loop
+                Fetch data_list into current_element;
+                Exit when (data_list %NOTFOUND);
+                
+                Pipe row(current_element);      
+            End loop;
+        end get_DBData_list;
+end output_for_user;
 /
 
 Create or replace Package work_with_excel_file as
@@ -225,7 +300,7 @@ Create or replace package body work_with_excel_file as
                     Where excel_file_name_fk = file_name;
                     
             Delete from Rule
-                            Where excel_file_name_fk = file_name;
+                Where excel_file_name_fk = file_name;
         
             Delete from "Excel file"
                 Where excel_file_name = file_name and user_login_fk = user_login;
@@ -423,6 +498,56 @@ Create or replace package body work_with_db as
     end work_with_db;
 /    
 
+Create or replace package work_with_user as
+    Procedure delete_user(login in "User".user_login%TYPE);
+    
+    Procedure change_user_role(login in "User".user_login%TYPE);
+end work_with_user;
+/
+
+Create or replace package body work_with_user as    
+    Procedure delete_user(login in "User".user_login%TYPE)
+    is
+    Begin
+        Delete from Database
+            Where user_login_fk = login;
+            
+        Delete from "Database generation"
+            Where user_login_fk = login;  
+            
+        Delete from Rule
+            Where user_login_fk = login;  
+    
+        Delete from "Excel file"
+            Where user_login_fk = login;
+            
+        Delete from "User"
+            Where user_login = login;  
+        Commit;
+    end delete_user;
+    
+    Procedure change_user_role(login in "User".user_login%TYPE)
+    is
+        current_role "User".role_name_fk%TYPE;
+    Begin
+        Select user_role into current_role
+        From table(output_for_user.get_user_list(login));
+        
+        If current_role = 'Banned' Then
+            Update "User"
+                Set role_name_fk = 'Default'
+                Where user_login = login;
+            Commit;
+        Else
+            Update "User"
+                Set role_name_fk = 'Banned'
+                Where user_login = login;
+            Commit;
+        End if;
+    end change_user_role;
+end work_with_user;
+/
+
 Create or replace package db_generation as
     Type rowRule is record(
         data_address Rule.rule_data_address%TYPE
@@ -448,6 +573,7 @@ Create or replace package db_generation as
     Pipelined;
 End db_generation;
 /
+
 Create or replace package body db_generation as
     Procedure choose_data(file_name in "Excel file".excel_file_name%TYPE, current_user_login in Rule.user_login_fk%TYPE, cell_address in Rule.rule_data_address%TYPE, db_name in Database.database_name%TYPE) 
     is
