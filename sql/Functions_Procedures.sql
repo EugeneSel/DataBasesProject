@@ -12,6 +12,7 @@ Create or replace Package  body user_authorization as
     Procedure registration(login in "User".user_login%TYPE, pass in "User".user_password%TYPE, email in "User".user_email%TYPE, message out STRING, user_role in "User".role_name_fk%TYPE default 'Default')
     is
     Begin
+        Set TRANSACTION isolation level SERIALIZABLE;
         
         INSERT INTO "User"(user_login, role_name_fk, user_password, user_email)
             Values(login, user_role, pass, email);
@@ -40,6 +41,8 @@ Create or replace Package  body user_authorization as
             Select * 
             From "User";
     Begin
+        Set TRANSACTION isolation level READ COMMITTED;
+    
         For current_element in user_list
         Loop
             If current_element.user_login = login Then
@@ -139,6 +142,8 @@ Create or replace package body output_for_user as
             string_query VARCHAR2(300);
             current_element rowExcel;
         begin
+            Set TRANSACTION isolation level READ COMMITTED;
+            
             string_query := 'Select * 
                                 from "Excel file"
                                 where user_login_fk = trim('''||user_login||''') and deleted is null';
@@ -166,6 +171,8 @@ Create or replace package body output_for_user as
             string_query VARCHAR2(300);
             current_element rowDB;
         begin
+            Set TRANSACTION isolation level READ COMMITTED;
+            
             string_query := 'Select * 
                                 from Database
                                 where user_login_fk = trim('''||user_login||''') and deleted is null';
@@ -193,6 +200,8 @@ Create or replace package body output_for_user as
             string_query VARCHAR2(300);
             current_element rowUser;
         begin
+            Set TRANSACTION isolation level READ COMMITTED;
+            
             string_query := 'Select * 
                                 from "User"';
                                 
@@ -219,6 +228,8 @@ Create or replace package body output_for_user as
             string_query VARCHAR2(300);
             current_element rowRule;
         Begin
+            Set TRANSACTION isolation level READ COMMITTED;
+            
             string_query := 'Select * 
                                 from Rule
                                 where trim(user_login_fk) = trim('''||login||''') and deleted is null';
@@ -249,6 +260,8 @@ Create or replace package body output_for_user as
             string_query VARCHAR2(300);
             current_element rowDBData;
         Begin
+            Set TRANSACTION isolation level READ COMMITTED;
+            
             string_query := 'Select * 
                                 from "Database generation"
                                 where trim(user_login_fk) = trim('''||login||''')';
@@ -295,6 +308,8 @@ Create or replace package body work_with_excel_file as
         is
             is_exist INTEGER :=0;
         Begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             Select count(*) into is_exist
             From "Excel file"
             Where excel_file_name = file_name;
@@ -347,7 +362,9 @@ Create or replace package body work_with_excel_file as
                 From "Excel file";
                 
             is_exist Number(1, 0);
-        begin    
+        begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             is_exist := 0;
             
             For current_element in file_list
@@ -409,6 +426,8 @@ Create or replace package body work_with_excel_file as
                 
             is_exist Number(1, 0);
         begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             is_exist := 0;
             
             For current_element in file_list
@@ -463,6 +482,8 @@ Create or replace package body work_with_excel_file as
             
             is_deleted INTEGER := 0;
         begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             is_exist := 0;
             
             Select count(*) into is_deleted
@@ -539,6 +560,8 @@ Create or replace package body work_with_db as
         is
             is_exist INTEGER :=0;
         Begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             Select count(*) into is_exist
             From Database
             Where database_name = db_name;
@@ -568,6 +591,8 @@ Create or replace package body work_with_db as
     Procedure delete_db(db_name in Database.database_name%TYPE, user_login in Database.user_login_fk%TYPE) 
         is
         begin        
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             Update Database
                 Set deleted = current_timestamp
                 Where database_name = db_name and user_login_fk = user_login;
@@ -587,6 +612,8 @@ Create or replace package body work_with_user as
     Procedure delete_user(login in "User".user_login%TYPE)
     is
     Begin
+        Set TRANSACTION isolation level SERIALIZABLE;
+    
         Delete from Database
             Where user_login_fk = login;
             
@@ -607,7 +634,7 @@ Create or replace package body work_with_user as
     Procedure change_user_role(login in "User".user_login%TYPE)
     is
         current_role "User".role_name_fk%TYPE;
-    Begin
+    Begin                
         Select user_role into current_role
         From table(output_for_user.get_user_list(login));
         
@@ -668,6 +695,8 @@ Create or replace package body db_generation as
                 
             is_exist Number(1, 0);
         begin
+            Set TRANSACTION isolation level SERIALIZABLE;
+            
             is_exist := 0;
             
             For current_element in file_list
@@ -719,6 +748,8 @@ Create or replace package body db_generation as
             From "Database generation"
             Where new_database_name = db_name;
     begin
+        Set TRANSACTION isolation level READ COMMITTED;
+        
         For current_element in chosen_data
         Loop
             Pipe row(current_element);
