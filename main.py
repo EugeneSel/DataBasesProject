@@ -12,6 +12,7 @@ from forms.work_with_db import AddDBForm, DeleteDBForm, GenerateDBForm
 from forms.work_with_excel_file import FilterExcelDataForm, DeleteExcelDataForm, ExcelDataForm, ChooseExcelForm, \
     AddExcelForm
 from forms.work_with_user import UpdateUserForm, AddUserForm
+from isolation_level import isolation_level
 
 app = Flask(__name__)
 app.secret_key = 'development key'
@@ -44,6 +45,7 @@ def index():
 def login():
     login_form = LoginForm()
 
+    isolation_level("READ_COMMITTED")
     userList = getUserList()
 
     if request.method == 'POST':
@@ -89,6 +91,7 @@ def login():
 def registration():
     reg_form = RegForm()
 
+    isolation_level("READ_COMMITTED")
     userList = getUserList()
     if request.method == 'POST':
         if not reg_form.validate():
@@ -105,6 +108,7 @@ def registration():
                 session.pop('login', None)
                 return render_template('registration.html', form=reg_form, is_unique='User with current login already exists.')
             else:
+                isolation_level("SERIALIZABLE")
                 user_login, message = regUser(
                     request.form['login'],
                     request.form['password'],
@@ -132,6 +136,7 @@ def choose_excel_file():
         return redirect(url_for('index'))
 
     login = session['login']
+    isolation_level("READ_COMMITTED")
     fileList = getExcelFileList(login)
 
     add_form = AddExcelForm()
@@ -150,7 +155,9 @@ def choose_excel_file():
                         break
 
                 if is_unique:
+                    isolation_level("SERIALIZABLE")
                     message = addExcelFile(request.form['file_name'], session['login'])
+                    isolation_level("READ_COMMITTED")
                     fileList = getExcelFileList(session['login'])
                     choose_form.file_list.choices = [(int(fileList.index(current)), current[0]) for current in fileList]
                     return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form,
@@ -168,7 +175,9 @@ def choose_excel_file():
                     return redirect(url_for('excel_file'))
                 elif choose_form.delete.data:
                     file_name = fileList[int(request.form['file_list'])][0]
+                    isolation_level("SERIALIZABLE")
                     file_name = deleteExcelFile(file_name, session['login'])
+                    isolation_level("READ_COMMITTED")
                     fileList = getExcelFileList(session['login'])
                     choose_form.file_list.choices = [(int(fileList.index(current)), current[0]) for current in fileList]
                     return render_template('choose_excel_file.html', add_form=add_form, choose_form=choose_form, login=login,
@@ -201,6 +210,7 @@ def excel_file():
         return redirect(url_for('choose_excel_file'))
 
     file_name = session['file_name']
+    isolation_level("READ_COMMITTED")
     dataList = getRuleList(login, file_name)
     delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
     if request.method == 'POST':
@@ -210,10 +220,12 @@ def excel_file():
                                        login=login, data=dataList, file_name=file_name, del_message='You didn`t choose any cell.')
             else:
                 print(dataList[int(request.form['data_list'])][2])
+                isolation_level("SERIALIZABLE")
                 message = deleteData(
                     file_name,
                     dataList[int(request.form['data_list'])][2]
                 )
+                isolation_level("READ_COMMITTED")
                 dataList = getRuleList(login, file_name)
                 delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
@@ -224,6 +236,7 @@ def excel_file():
                                        login=login, data=dataList, file_name=file_name)
             else:
                 if update_form.update.data:
+                    isolation_level("SERIALIZABLE")
                     message = updateData(
                         file_name,
                         request.form['cell_address'],
@@ -231,12 +244,14 @@ def excel_file():
                         request.form['cell_type']
                     )
                 elif update_form.add.data:
+                    isolation_level("SERIALIZABLE")
                     message = addData(
                         file_name,
                         request.form['cell_address'],
                         request.form['cell_data'],
                         request.form['cell_type']
                     )
+                isolation_level("READ_COMMITTED")
                 dataList = getRuleList(login, file_name)
                 delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form, login=login,
@@ -246,8 +261,10 @@ def excel_file():
                 return render_template('excel_file.html', update_form=update_form, delete_form=delete_form, filter_form=filter_form,
                                        login=login, data=dataList, file_name=file_name)
             else:
+                isolation_level("READ_COMMITTED")
                 dataList = getRuleList(login, file_name, request.form['f_cell_address'])
                 if not dataList:
+                    isolation_level("READ_COMMITTED")
                     dataList = getRuleList(login, file_name)
                     delete_form.data_list.choices = [(int(dataList.index(current)), current[2:5]) for current in dataList]
                     return render_template('excel_file.html', update_form=update_form, delete_form=delete_form,
@@ -279,6 +296,7 @@ def databases():
         return redirect(url_for('index'))
 
     login = session['login']
+    isolation_level("READ_COMMITTED")
     dbList = getDatabaseList(login)
 
     add_form = AddDBForm()
@@ -297,7 +315,9 @@ def databases():
                         break
 
                 if is_unique:
+                    isolation_level("SERIALIZABLE")
                     message = addDatabase(request.form['db_name'], session['login'])
+                    isolation_level("READ_COMMITTED")
                     dbList = getDatabaseList(session['login'])
                     delete_form.db_list.choices = [(int(dbList.index(current)), current[0]) for current in dbList]
                     return render_template('database.html', add_form=add_form, delete_form=delete_form,
@@ -312,10 +332,11 @@ def databases():
             else:
                 if delete_form.show_data.data:
                     db_name = dbList[int(request.form['db_list'])][0]
+                    isolation_level("READ_COMMITTED")
                     new_db_list = getDBDataList(login, db_name)
                     data_list = []
                     for i in range(len(new_db_list)):
-                        print(getRuleList(login, new_db_list[i][2], new_db_list[i][4]))
+                        isolation_level("READ_COMMITTED")
                         data_list.append(getRuleList(login, new_db_list[i][2], new_db_list[i][4])[0])
                     if not data_list:
                         data_list.append('This Database is empty')
@@ -323,7 +344,9 @@ def databases():
                                            data_list=data_list, db_name=db_name)
                 elif delete_form.delete.data:
                     db_name = dbList[int(request.form['db_list'])][0]
+                    isolation_level("SERIALIZABLE")
                     db_name = deleteDatabase(db_name, session['login'])
+                    isolation_level("READ_COMMITTED")
                     dbList = getDatabaseList(session['login'])
                     delete_form.db_list.choices = [(int(dbList.index(current)), current[0]) for current in dbList]
                     return render_template('database.html', add_form=add_form, delete_form=delete_form,
@@ -350,6 +373,7 @@ def users():
     update_form = UpdateUserForm()
     add_form = AddUserForm()
 
+    isolation_level("READ_COMMITTED")
     userList = getUserList()
     login = session['login']
     update_form.user_list.choices = [(int(userList.index(current)), current) for current in userList]
@@ -360,20 +384,26 @@ def users():
             else:
                 if update_form.change_role.data:
                     user_login = userList[int(request.form['user_list'])][0]
+                    isolation_level("READ_COMMITTED")
                     user_role = getUserList(user_login)[0][1]
                     if user_role == 'Admin':
                         return render_template('user.html', update_form=update_form, add_form=add_form, login=login, update_message='You can`t change role of current User')
+                    isolation_level("SERIALIZABLE")
                     user_login = updateUser(user_login)
+                    isolation_level("READ_COMMITTED")
                     userList = getUserList()
                     update_form.user_list.choices = [(int(userList.index(current)), current) for current in userList]
                     return render_template('user.html', update_form=update_form, add_form=add_form, login=login,
                                            update_message='Role of User %s updated successfully' %user_login)
                 elif update_form.delete.data:
                     user_login = userList[int(request.form['user_list'])][0]
+                    isolation_level("READ_COMMITTED")
                     user_role = getUserList(user_login)[0][1]
                     if user_role == 'Admin':
                         return render_template('user.html', update_form=update_form, add_form=add_form, login=login, update_message='You can`t delete current User')
+                    isolation_level("SERIALIZABLE")
                     user_login = deleteUser(user_login)
+                    isolation_level("READ_COMMITTED")
                     userList = getUserList()
                     update_form.user_list.choices = [(int(userList.index(current)), current) for current in userList]
                     return render_template('user.html', update_form=update_form, add_form=add_form, login=login,
@@ -392,6 +422,7 @@ def users():
                     return render_template('user.html', update_form=update_form, add_form=add_form, login=login,
                                            is_unique='User with current login already exists.')
 
+                isolation_level("SERIALIZABLE")
                 user_login, add_message = regUser(
                     request.form['login'],
                     request.form['password'],
@@ -402,6 +433,7 @@ def users():
                 if add_message != 'Operation successful':
                     return render_template('user.html', update_form=update_form, add_form=add_form, login=login, add_message=add_message)
 
+                isolation_level("READ_COMMITTED")
                 userList = getUserList()
                 update_form.user_list.choices = [(int(userList.index(current)), current) for current in userList]
                 return render_template('user.html', update_form=update_form, add_form=add_form, login=login, add_message=add_message + ". User %s created." %user_login)
@@ -425,6 +457,7 @@ def choose_file_for_db():
         return redirect(url_for('index'))
 
     login = session['login']
+    isolation_level("READ_COMMITTED")
     fileList = getExcelFileList(login)
 
     choose_form = ChooseExcelForm()
@@ -462,8 +495,9 @@ def database_generation():
         return redirect(url_for('choose_file_for_db'))
 
     file_name = session['file_name']
-    dataList = getRuleList(login, file_name)
+    isolation_level("READ_COMMITTED")
     databaseList = getDatabaseList(login)
+    dataList = getRuleList(login, file_name)
     newDatabaseList = getDBDataList(login)
 
     gen_form = GenerateDBForm()
@@ -486,8 +520,10 @@ def database_generation():
                 for current in dataList:
                     if request.form.getlist(current[2]):
                         chosenDataList.append(current)
+                        isolation_level("SERIALIZABLE")
                         file_name, message = chooseData(file_name, session['login'], current[2], request.form['new_db_name'])
                 message = addDatabase(request.form['new_db_name'], session['login'])
+                isolation_level("READ_COMMITTED")
                 databaseList = getDatabaseList(login)
                 return render_template('database_generation.html', gen_form=gen_form, login=login, file_name=file_name, databaseList=databaseList, dataList=dataList, gen_message=message, chosenData=chosenDataList)
             else:
@@ -517,19 +553,20 @@ def plots():
         if login is None:
             return redirect(url_for('index'))
 
+        isolation_level("READ_COMMITTED")
         fileList = getAllExcelFileList(login)
         dbList = getAllDatabaseList(login)
         countList = countExcelDataList(login)
 
         traceExcel = go.Scatter(
-            x=[current[3] for current in fileList],
-            y=[current[0] for current in fileList],
+            x=[current[0] + ' ' + str(current[3]) for current in fileList],
+            y=[current[2] for current in fileList],
             name='Excel files'
         )
 
         traceDB = go.Scatter(
-            x=[current[3] for current in dbList],
-            y=[current[0] for current in dbList],
+            x=[current[0] + ' ' + str(current[3]) for current in dbList],
+            y=[current[2] for current in dbList],
             name='Databases'
         )
 
@@ -550,6 +587,7 @@ def plots():
         if login is None:
             return redirect(url_for('index'))
         else:
+            isolation_level("READ_COMMITTED")
             fileList = getAllExcelFileList(login)
             dbList = getAllDatabaseList(login)
             countList = countExcelDataList(login)
