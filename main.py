@@ -26,6 +26,7 @@ def index():
             return "<div>You are not logged in <br><a href = '/login'></b>" + "Click here to log in</b></a><br>" + \
                     "<a href='/registration'></b>Or here to create an account</b></a></div>"
         else:
+            isolation_level("READ_COMMITTED")
             session['role'] = getUserList(login)[0][1]
             role = session['role']
             return render_template('index.html', login=login, role=role)
@@ -36,6 +37,7 @@ def index():
             return "<div>You are not logged in <br><a href = '/login'></b>" + "Click here to log in</b></a><br>" + \
                     "<a href='/registration'></b>Or here to create an account</b></a></div>"
         else:
+            isolation_level("READ_COMMITTED")
             session['role'] = getUserList(login)[0][1]
             role = session['role']
             return render_template('index.html', login=login, role=role)
